@@ -8,7 +8,7 @@ export default function PayloadsModal({ onClose }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('/api/payloads', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/payloads`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

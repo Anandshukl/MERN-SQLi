@@ -67,7 +67,7 @@ export default function Dashboard() {
     setCopied(false);
 
     try {
-      const res = await fetch('/api/detect', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/detect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

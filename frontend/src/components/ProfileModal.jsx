@@ -7,7 +7,7 @@ export default function ProfileModal({ onClose }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('/api/profile', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
